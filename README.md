@@ -1,6 +1,6 @@
-# Tên Dự Án
+# Bioinformatics
 
-Một mô tả ngắn gọn về dự án của bạn.
+from MHL with love
 
 ## Mục Lục
 
@@ -20,8 +20,7 @@ Giới thiệu ngắn về mục đích của dự án và tại sao nó hữu �
 
 Liệt kê các yêu cầu cần thiết để chạy dự án, ví dụ:
 
-- Python 3.8+
-- Thư viện cần thiết: `requirements.txt`
+- Python
 
 ## Cài Đặt
 
@@ -29,4 +28,4 @@ Hướng dẫn cài đặt dự án:
 
 1. Clone dự án về máy:
    ```bash
-   git clone https://github.com/your-username/your-project.git
+   git clone https://github.com/LeMinhHung120204/Bioinformatics.git
