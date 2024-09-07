@@ -6,24 +6,25 @@ def Mass(peptide):
     return sum(peptide)
 
 def Cyclospectrum(peptide):
-    sum = [0] * len(peptide)
-    for i in range(len(peptide)):
-        sum[i] = sum[i - 1] +peptide[i]
-
     n = len(peptide)
-    res = [0, sum[n - 1]]
-
-    for i in range(1, n):
-        for j in range(n):
-            if (i + j > n):
-                res.append(sum[n - 1] - sum[j - 1] + sum[i + j - n - 1])
-            else:
-                if j == 0:
-                    res.append(sum[j + i - 1])
-                else:
-                    res.append(sum[i + j - 1] - sum [j - 1])
-    #res.sort()
-    return sorted(res)
+    PrefixMass = [0] * (n + 1)
+    
+    # Tính PrefixMass
+    for i in range(1, n + 1):
+        PrefixMass[i] = PrefixMass[i - 1] + peptide[i - 1]
+    
+    peptideMass = PrefixMass[n]  # Khối lượng của peptide
+    CyclicSpectrum = [0]  # Khởi tạo với giá trị 0 cho đoạn con rỗng
+    
+    for i in range(n):
+        for j in range(i + 1, n + 1):
+            CyclicSpectrum.append(PrefixMass[j] - PrefixMass[i])
+            # Thêm khối lượng vòng vào phổ vòng
+            if i > 0 and j < n:
+                CyclicSpectrum.append(peptideMass - (PrefixMass[j] - PrefixMass[i]))
+    
+    # Trả về phổ vòng đã sắp xếp
+    return sorted(CyclicSpectrum)
 
 def LinearSpectrum(peptide):
     n = len(peptide)
