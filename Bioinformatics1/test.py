@@ -1,90 +1,92 @@
 import random
-from collections import defaultdict
 
-def count_motifs(motifs):
-    count = defaultdict(lambda: defaultdict(int))
-    t = len(motifs)
-    k = len(motifs[0])
-    for i in range(k):
-        for j in range(t):
-            count[i][motifs[j][i]] += 1
+def HammingDistance(String1, String2):
+    count = 0
+    for i in range(len(String1)):
+        if String1[i] != String2[i]:
+            count += 1
     return count
 
-def profile_with_pseudocounts(motifs, pseudocount):
-    count = count_motifs(motifs)
-    t = len(motifs)
-    k = len(motifs[0])
-    profile = defaultdict(lambda: defaultdict(float))
-    
-    for i in range(k):
-        total = sum(count[i].values()) + 4 * pseudocount
-        for nucleotide in 'ACGT':
-            profile[i][nucleotide] = (count[i][nucleotide] + pseudocount) / total
-    
-    return profile
+def find_consensus_string(kmers):
+    consensus = []
+    for i in range(len(kmers[0])):
+        nucleotides_dict = {"A": 0, "C": 0, "G": 0, "T": 0}
+        for j in range(len(kmers)):
+            curr_kmer = kmers[j]
+            nucleotides_dict[curr_kmer[i]] += 1
+        consensus.append(max(nucleotides_dict, key=nucleotides_dict.get))
+    return "".join(consensus)
 
-def probability(motif, profile):
-    prob = 1.0
-    for i, nucleotide in enumerate(motif):
-        prob *= profile[i][nucleotide]
-    return prob
+def most_probable_kmer(dna, k, profile):
+    kmer_prob = []
+    for i in range(len(dna) - k + 1):
+        kmer = dna[i:i+k]
+        probability = 1
+        for j in range(len(kmer)):
+            probability *= profile[kmer[j]][j]
+        kmer_prob.append((kmer, probability))
+    return max(kmer_prob, key=lambda x: x[1])[0]
 
-def random_motif(Dna, k):
-    start = random.randint(0, len(Dna[0]) - k)
-    return Dna[0][start:start + k]
+def build_profile_matrix(kmers, pseudocounts=False):
+    k = len(kmers[0])
+    if pseudocounts:
+        profileMatrix = {"A": [1] * k, "C": [1] * k, "G": [1] * k, "T": [1] * k}
+    else:
+        profileMatrix = {"A": [0] * k, "C": [0] * k, "G": [0] * k, "T": [0] * k}
 
-def gibbs_sampler(Dna, k, t, N, pseudocount):
-    best_motifs = [random_motif(Dna, k) for _ in range(t)]
-    best_score = score(best_motifs)
-    
-    for _ in range(N):
-        i = random.randint(0, t - 1)
-        current_motifs = best_motifs[:i] + best_motifs[i + 1:]
-        profile = profile_with_pseudocounts(current_motifs, pseudocount)
-        
-        probabilities = [probability(Dna[i][j:j + k], profile) for j in range(len(Dna[i]) - k + 1)]
-        total_prob = sum(probabilities)
-        probabilities = [p / total_prob for p in probabilities]
-        
-        new_motif = random.choices(
-            [Dna[i][j:j + k] for j in range(len(Dna[i]) - k + 1)], 
-            weights=probabilities
-        )[0]
-        
-        best_motifs[i] = new_motif
-        current_score = score(best_motifs)
-        if current_score < best_score:
-            best_score = current_score
-            best_motifs = best_motifs
-    
-    return best_motifs
+    for kmer in kmers:
+        for i in range(len(kmer)):
+            profileMatrix[kmer[i]][i] += 1
 
-def score(motifs):
-    consensus = ''.join(max('ACGT', key=lambda x: motif.count(x)) for motif in zip(*motifs))
-    return sum(sum(1 for x in motif if x != c) for motif, c in zip(motifs, consensus))
+    for key, val in profileMatrix.items():
+        profileMatrix[key] = [x / (len(kmers) + (2 if pseudocounts else 0)) for x in val]
 
-def GibbsSampler(Dna, k, t, N):
-    best_motifs = None
-    best_score = float('inf')
-    
-    for _ in range(20):  # 20 random starts
-        motifs = gibbs_sampler(Dna, k, t, N, pseudocount=1)
-        current_score = score(motifs)
-        if current_score < best_score:
-            best_score = current_score
-            best_motifs = motifs
-    
-    return best_motifs
+    return profileMatrix
 
-# Sample Input
-k, t, N = 8, 5, 100
-Dna = [
-    "CGCCCCTCTCGGGGGTGTTCAGTAACCGGCCA",
-    "GGGCGAGGTATGTGTAAGTGCCAAGGTGCCAG",
-    "TAGTACCGAGACCGAAAGAAGTATACAGGCGT",
-    "TAGATCAAGTTTCAGGTGCACGTCGGTGAACC",
-    "AATCCACCAGCTCCACGTGCAATGTTGGCCTA"
-]
+def gibbsSampler(dnas, k, t, sample_times):
+    motifs = []
+    best_motifs = []
+    best_motifs_score = float("inf")
+    choices = list(range(len(dnas)))
 
-# Output
-print("Best Motifs:", GibbsSampler(Dna, k, t, N))
+    for dna in dnas:
+        rind = random.randint(0, len(dna) - k)
+        kmer = dna[rind:rind+k]
+        motifs.append(kmer)
+
+    for _ in range(sample_times):
+        rind = random.choice(choices)
+        motifs.pop(rind)
+
+        profile = build_profile_matrix(motifs, pseudocounts=True)
+        excluded_dna = dnas[rind]
+        probable_kmer = most_probable_kmer(excluded_dna, k, profile)
+
+        motifs.insert(rind, probable_kmer)
+        consensus_motif = find_consensus_string(motifs)
+
+        motifs_score = sum(HammingDistance(consensus_motif, motif) for motif in motifs)
+
+        if motifs_score < best_motifs_score:
+            best_motifs = motifs[:]
+            best_motifs_score = motifs_score
+
+        choices = list(range(len(dnas)))
+
+    return best_motifs, best_motifs_score
+
+with open('input.inp','r') as fi:
+    k, t, N = map(int, fi.readline().strip().split())
+    dna = list(fi.readline().strip().split())
+
+motifs_score = float("inf")
+best_motifs = None
+
+for _ in range(150):
+    motifs, sc = gibbsSampler(dna, k, t, N)
+    if sc < motifs_score:
+        motifs_score = sc
+        best_motifs = motifs
+
+for best_motif in best_motifs:
+    print(best_motif, end=" ")

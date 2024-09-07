@@ -1,89 +1,75 @@
 import random
-
-def generate_Profile(Motifs):
-    k = len(Motifs[0])
-    t = len(Motifs)
-    Profile = [[0] * k for _ in range(4)]
-    for dna in Motifs:
-        for i in range(k):
-            if dna[i] == 'A':
-                Profile[0][i] += 1
-            elif dna[i] == 'C':
-                Profile[1][i] += 1
-            elif dna[i] == 'G':
-                Profile[2][i] += 1
-            elif dna[i] == 'T':
-                Profile[3][i] += 1
-    
-    for i in range(4):
-        for j in range(k):
-            #Profile[i][j] = (Profile[i][j] + 1) / (t + 4)
-            Profile[i][j] /= t
-    return Profile
-
-def Profile_Most_Probable(dna, k, profile):
-    maxx = -1
-    res = ''
-    for i in range(len(dna) - k + 1):
-        text = dna[i : i + k]
-        pr = 1
-        for j in range(k):
-            if(text[j] == 'A'):
-                pr *= profile[0][j] 
-            elif text[j] == 'C':
-                pr *= profile[1][j]
-            elif text[j] == 'G':
-                pr *= profile[2][j]
-            elif text[j] == 'T':
-                pr *= profile[3][j]
-        if maxx < pr :
-            maxx = pr
-            res = dna[i : i + k]
-    return res
-
-def generate_Motifs(Profile, Dna, k):
-    Motifs = []
-    for s in Dna:
-        Motifs.append(Profile_Most_Probable(s, k, Profile))
-    return Motifs
-
-def Score(motifs, t):
-    k = len(motifs[0])
+def Score(motifs):
     score = 0
-    for i in range(k):
-        column = [motif[i] for motif in motifs]
-        max_count = max(column.count(nucleotide) for nucleotide in 'ACGT')
-        score += t - max_count
+    t = len(motifs)
+    k = len(motifs[0])
+    for j in range(k):
+        column = [motifs[i][j] for i in range(t)]
+        max_freq = max(column.count('A'), column.count('C'), column.count('G'), column.count('T'))
+        score += (t - max_freq)
     return score
 
+def ProfileWithPseudocounts(motifs):
+    t = len(motifs)
+    k = len(motifs[0])
+    profile = {'A': [1] * k, 'C': [1] * k, 'G': [1] * k, 'T': [1] * k}
+    for i in range(t):
+        for j in range(k):
+            profile[motifs[i][j]][j] += 1
+    for nucleotide in profile:
+        for j in range(k):
+            profile[nucleotide][j] /= (t + 4)
+    return profile
+
+def ProfileMostProbableKmer(text, k, profile):
+    n = len(text)
+    max_prob = -1
+    most_prob_kmer = text[0:k]
+    for i in range(n - k + 1):
+        kmer = text[i:i+k]
+        prob = 1
+        for j in range(k):
+            prob *= profile[kmer[j]][j]
+        if prob > max_prob:
+            max_prob = prob
+            most_prob_kmer = kmer
+    return most_prob_kmer
+
+def RandomMotifs(Dna, k, t):
+    motifs = []
+    for i in range(t):
+        start = random.randint(0, len(Dna[i]) - k)
+        motifs.append(Dna[i][start:start + k])
+    return motifs
+
 def RandomizedMotifSearch(Dna, k, t):
-    '''Motifs = []
-    for s in Dna:
-        Motifs.append(s[:k])'''
-    Motifs = [random.choice([s[i:i+k] for i in range(len(s) - k + 1)]) for s in Dna]
-    BestMotifs = Motifs
-
+    motifs = RandomMotifs(Dna, k, t)
+    best_motifs = motifs
     while True:
-    #for _ in range(1000):
-        Profile = generate_Profile(Motifs)
-        Motifs = generate_Motifs(Profile, Dna, k)
-        if Score(Motifs, t) < Score(BestMotifs, t):
-            BestMotifs = Motifs
+        profile = ProfileWithPseudocounts(motifs)
+        motifs = [ProfileMostProbableKmer(seq, k, profile) for seq in Dna]
+        if Score(motifs) < Score(best_motifs):
+            best_motifs = motifs
         else:
-            return BestMotifs
+            return best_motifs
 
-with open ('input.inp','r') as fi:
+def RunRandomizedMotifSearch(Dna, k, t, iterations=1000):
+    best_motifs = RandomizedMotifSearch(Dna, k, t)
+    best_score = Score(best_motifs)
+    for _ in range(iterations - 1):
+        motifs = RandomizedMotifSearch(Dna, k, t)
+        current_score = Score(motifs)
+        if current_score < best_score:
+            best_motifs = motifs
+            best_score = current_score
+    return best_motifs
+
+# Sample Input
+with open('input.inp','r') as fi:
     k, t = map(int, fi.readline().strip().split())
-    Dna_sequences = list(fi.readline().strip().split())
+    Dna = list(fi.readline().strip().split())
 
-best_motifs = RandomizedMotifSearch(Dna_sequences, k, t)
-best_score = Score(best_motifs, t)
-for _ in range(1000):
-    motifs = RandomizedMotifSearch(Dna_sequences, k, t)
-    current_score = Score(motifs, t)
-    if current_score < best_score:
-        best_motifs = motifs
-        best_score = current_score
-
-for s in best_motifs:
-    print(s)
+# Running the RandomizedMotifSearch
+best_motifs = RunRandomizedMotifSearch(Dna, k, t)
+print("Best Motifs:")
+print(" ".join(best_motifs))
