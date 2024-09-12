@@ -26,7 +26,7 @@ def LCSBackTrack(v, w):
                 backtrack[i][j] = '0'
             elif s[i][j] == s[i][j - 1]:
                 backtrack[i][j] = '1'
-            elif s[i][j] == s[i - 1][j - 1]:
+            elif s[i][j] == s[i - 1][j - 1] + match:
                 backtrack[i][j] = '2'
     return backtrack
 
