@@ -93,22 +93,32 @@ def runSmallParsimony(n, adj, nodes, lastEdge): # for unrooted binary tree
 def findNearestNeighbors(edge, adj):
     adj1 = deepcopy(adj)
     adj2 = deepcopy(adj)
-
+    
+    # Xóa cạnh của 2 internal Node
     del adj1[edge[0]][edge[1]]
     del adj1[edge[1]][edge[0]]
+
     e0 = list(adj1[edge[0]].keys())
     e1 = list(adj1[edge[1]].keys())
+
+    # Kết nối nút edge[0] với nút con đầu tiên của edge[1] và ngược lại
+    # Kết nối nút edge[1] với nút con đầu tiên của edge[0] và ngược lạ
     adj1[edge[0]][e1[0]] = 0
     adj1[edge[1]][e0[0]] = 0
     adj1[e1[0]][edge[0]] = 0
     adj1[e0[0]][edge[1]] = 0
+
+    # Xóa các mối liên kết không cần thiết giữa các nút đã kết nối với edge[0] và edge[1]
     del adj1[e1[0]][edge[1]]
     del adj1[e0[0]][edge[0]]
     del adj1[edge[0]][e0[0]]
     del adj1[edge[1]][e1[0]]
+
+    ## Thêm lại cạnh ban đầu giữa edge[0] và edge[1] để duy trì cây nhị phân
     adj1[edge[0]][edge[1]] = 0
     adj1[edge[1]][edge[0]] = 0
 
+    # Xử lý cho cây hàng xóm adj2
     adj2[edge[0]][e1[1]] = 0
     adj2[edge[1]][e0[0]] = 0
     adj2[e1[1]][edge[0]] = 0
@@ -120,21 +130,31 @@ def findNearestNeighbors(edge, adj):
     return adj1, adj2
 
 def runNearestNeighborInterchange(n, adj, nodes, lastEdge):
-    trees = []
-    score = np.inf
+    trees = [] # Một danh sách lưu trữ các cây ứng viên với điểm parsimony tối ưu được tìm thấy
+    score = np.inf # Ban đầu được gán bằng np.inf (vô cùng lớn), đại diện cho điểm parsimony tối thiểu
+
+    # Gọi hàm runSmallParsimony để tính điểm parsimony cho cây ban đầu và cập nhật các biến này với giá trị mới
     newScore, newAdj, newNodes = runSmallParsimony(n, adj, deepcopy(nodes), lastEdge)
+
+    # Vòng lặp tiếp tục chạy cho đến khi không còn tìm thấy cây mới với điểm parsimony thấp hơn
     while newScore < score:
         score = newScore
         adj = newAdj
-        visited = set()
-        for v in range(n, len(adj)):
-            for u in adj[v].keys():
+        visited = set() # Tập hợp để lưu các cặp cạnh đã được kiểm tra, tránh tính toán lại cho các cặp đã xét
+
+        for v in range(n, len(adj)): # Duyệt qua các nút bên trong cây (nút không phải lá)
+            for u in adj[v].keys(): # Với mỗi nút bên trong, duyệt qua các cạnh kết nối với các nút khác
                 if u >= n and not (v, u) in visited:
+                    # Tìm các cây "láng giềng" gần nhất
                     adj1, adj2 = findNearestNeighbors([v, u], adj)
+
+                    # Tất cả các cạnh trong adj1 và adj2 được gán lại giá trị 0 để chuẩn bị cho việc tính parsimony
                     for i, a in enumerate(adj1):
                         adj1[i] = dict.fromkeys(a, 0)
                     for i, a in enumerate(adj2):
                         adj2[i] = dict.fromkeys(a, 0)
+                        
+                    # Chạy Small Parsimony trên các cây láng giềng
                     neighborScore, neighborAdj, neighborNodes = runSmallParsimony(n, adj1, deepcopy(nodes), [v, u])
                     if neighborScore < newScore:
                         newScore = neighborScore
@@ -144,9 +164,13 @@ def runNearestNeighborInterchange(n, adj, nodes, lastEdge):
                     if neighborScore < newScore:
                         newScore = neighborScore
                         newAdj = neighborAdj
-                        newNodes = neighborNodes                
+                        newNodes = neighborNodes 
+
+                    # Đánh dấu các cạnh đã duyệt               
                     visited.add((v, u))
                     visited.add((u, v))
+
+        # Thêm cây mới nếu điểm parsimony thấp hơn
         if newScore < score:
             trees.append((newScore, newAdj, newNodes))
     return trees
