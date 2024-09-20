@@ -112,12 +112,13 @@ def singleSmallParsimony(n, adjC, adjP, adj, nodes, char2ind, ind2char, charInd)
             if k != r:
                 adj[v][w] += 1
                 adj[w][v] += 1
-            
-            if len(adjC[u]) > 0: #  Kiểm tra xem nút con trái u có nút con hay không
+               
+            if len(adjC[u]) > 0: # Kiểm tra xem nút con trái u có nút con hay không
                 nodes[u] += ind2char[l] # Cập nhật tên cho nút con trái u với ký tự tối ưu l
-                nodes[w] += ind2char[r] # Cập nhật tên cho nút con phải w với ký tự tối ưu r
                 q.put((u, l))
-                q.put((w, r))        
+            if len(adjC[w]) > 0: # Kiểm tra xem nút con trái l có nút con hay không
+                nodes[w] += ind2char[r] # Cập nhật tên cho nút con phải w với ký tự tối ưu r
+                q.put((w, r))    
     return smin
 
 # n: Số lượng lá của cây
