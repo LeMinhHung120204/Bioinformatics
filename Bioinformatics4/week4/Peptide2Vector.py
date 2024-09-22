@@ -34,9 +34,14 @@ W 186'''
 def peptide2vector(peptide, aaDict):
     l = len(peptide)
     prefixMasses = []
+    # Tạo ra prefix masses
     for i in range(l):
         prefixMasses.append(sum([aaDict[aa] for aa in peptide[:i+1]]))
+
+    # Khởi peptideVector với độ dài của phần tử lớn nhất của prefixMasses    
     peptideVector = [0] * prefixMasses[-1]
+    
+    # Tạo peptide vector
     for m in prefixMasses:
         peptideVector[m-1] = 1
     return peptideVector

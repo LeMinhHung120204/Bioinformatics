@@ -33,8 +33,13 @@ W 186'''
     return {int(mass[i+1]):mass[i] for i in range(0, len(mass), 2)}, {mass[i]:int(mass[i+1]) for i in range(0, len(mass), 2)}
 
 def vector2peptide(peptideVector, massDict):
+    # Tạo prefix Masses từ peptide vector
     prefixMasses = [i+1 for i, v in enumerate(peptideVector) if 1 == v]
+    
+    # Thêm phần tử 0 vào đầu prefix Masses
     prefixMasses.insert(0, 0)
+
+    # Từ prefix Masses tạo ra peptide tương ứng
     peptide = ''.join([massDict[prefixMasses[i+1]-prefixMasses[i]] for i in range(len(prefixMasses)-1)])
     return peptide
 
