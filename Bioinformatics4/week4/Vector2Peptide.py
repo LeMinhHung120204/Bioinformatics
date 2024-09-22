@@ -7,8 +7,6 @@ def _input():
 
 def AminoAcidMassDict():
     massTable = '''
-X 4
-Z 5
 G 57
 A 71
 S 87
