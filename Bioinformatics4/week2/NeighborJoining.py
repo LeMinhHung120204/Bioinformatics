@@ -58,7 +58,6 @@ def runNeighborJoining(disMatrix, n):
 
         # Cập nhật danh sách kề
         m = len(adj)
-        adj.append([])
         adj[m].append((clusters[i], li))
         adj[clusters[i]].append((m, li))
         adj[m].append((clusters[j], lj))
